@@ -53,6 +53,7 @@ interface State<T_HT> {
   tipChildren: JSX.Element | null;
   isAreaSelectionInProgress: boolean;
   scrolledToHighlightId: string;
+  forceAreaHighlight: boolean;
 }
 
 interface Props<T_HT> {
@@ -80,6 +81,7 @@ interface Props<T_HT> {
     transformSelection: () => void
   ) => JSX.Element | null;
   enableAreaSelection: (event: MouseEvent) => boolean;
+  forceAreaHighlight?: boolean;
 }
 
 const EMPTY_ID = "empty-id";
@@ -101,6 +103,8 @@ export class PdfHighlighter<T_HT extends IHighlight> extends PureComponent<
     tip: null,
     tipPosition: null,
     tipChildren: null,
+    // TODO: RENAME FIELD
+    forceAreaHighlight: false,
   };
 
   eventBus = new EventBus();
@@ -160,6 +164,17 @@ export class PdfHighlighter<T_HT extends IHighlight> extends PureComponent<
   };
 
   componentDidUpdate(prevProps: Props<T_HT>) {
+    console.log("[DEBUG]::PDF componentDidUpdate", {
+      prevProps,
+      props: this.props,
+      canAnnotate: this.props.enableAreaSelection({} as MouseEvent),
+    });
+    if (prevProps.forceAreaHighlight !== this.props.forceAreaHighlight) {
+      this.setState({
+        ...this.state,
+        forceAreaHighlight: this.props.forceAreaHighlight || false,
+      });
+    }
     if (prevProps.pdfDocument !== this.props.pdfDocument) {
       this.init();
       return;
@@ -172,6 +187,11 @@ export class PdfHighlighter<T_HT extends IHighlight> extends PureComponent<
   init() {
     const { pdfDocument } = this.props;
     this.attachRef();
+
+    this.setState({
+      ...this.state,
+      forceAreaHighlight: this.props.forceAreaHighlight || false,
+    });
 
     this.viewer =
       this.viewer ||
@@ -566,11 +586,14 @@ export class PdfHighlighter<T_HT extends IHighlight> extends PureComponent<
               onChange={(isVisible) =>
                 this.setState({ isAreaSelectionInProgress: isVisible })
               }
-              shouldStart={(event) =>
-                enableAreaSelection(event) &&
-                isHTMLElement(event.target) &&
-                Boolean(asElement(event.target).closest(".page"))
-              }
+              shouldStart={(event) => {
+                return (
+                  (this.state.forceAreaHighlight ||
+                    enableAreaSelection(event)) &&
+                  isHTMLElement(event.target) &&
+                  Boolean(asElement(event.target).closest(".page"))
+                );
+              }}
               onSelection={(startTarget, boundingRect, resetSelection) => {
                 const page = getPageFromElement(startTarget);
 
