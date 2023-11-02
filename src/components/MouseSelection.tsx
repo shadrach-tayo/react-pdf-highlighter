@@ -186,8 +186,7 @@ class MouseSelection extends Component<Props, State> {
   }
 
   render() {
-    const { start, end } = this.state;
-
+    const { start, end, locked } = this.state;
     return (
       <div
         className="MouseSelection-container"
@@ -201,6 +200,7 @@ class MouseSelection extends Component<Props, State> {
         {start && end ? (
           <div
             className="MouseSelection"
+            data-locked={locked}
             style={this.getBoundingRect(start, end)}
           />
         ) : null}

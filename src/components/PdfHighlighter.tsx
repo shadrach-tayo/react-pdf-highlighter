@@ -164,11 +164,6 @@ export class PdfHighlighter<T_HT extends IHighlight> extends PureComponent<
   };
 
   componentDidUpdate(prevProps: Props<T_HT>) {
-    console.log("[DEBUG]::PDF componentDidUpdate", {
-      prevProps,
-      props: this.props,
-      canAnnotate: this.props.enableAreaSelection({} as MouseEvent),
-    });
     if (prevProps.forceAreaHighlight !== this.props.forceAreaHighlight) {
       this.setState({
         ...this.state,

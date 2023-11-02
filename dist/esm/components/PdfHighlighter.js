@@ -218,11 +218,6 @@ export class PdfHighlighter extends PureComponent {
         this.init();
     }
     componentDidUpdate(prevProps) {
-        console.log("[DEBUG]::PDF componentDidUpdate", {
-            prevProps,
-            props: this.props,
-            canAnnotate: this.props.enableAreaSelection({}),
-        });
         if (prevProps.forceAreaHighlight !== this.props.forceAreaHighlight) {
             this.setState(Object.assign(Object.assign({}, this.state), { forceAreaHighlight: this.props.forceAreaHighlight || false }));
         }

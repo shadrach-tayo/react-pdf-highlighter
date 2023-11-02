@@ -114,13 +114,13 @@ class MouseSelection extends Component {
         return boundingRect.width >= 1 && boundingRect.height >= 1;
     }
     render() {
-        const { start, end } = this.state;
+        const { start, end, locked } = this.state;
         return (React.createElement("div", { className: "MouseSelection-container", ref: (node) => {
                 if (!node) {
                     return;
                 }
                 this.root = node;
-            } }, start && end ? (React.createElement("div", { className: "MouseSelection", style: this.getBoundingRect(start, end) })) : null));
+            } }, start && end ? (React.createElement("div", { className: "MouseSelection", "data-locked": locked, style: this.getBoundingRect(start, end) })) : null));
     }
 }
 export default MouseSelection;
