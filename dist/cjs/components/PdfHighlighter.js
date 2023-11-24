@@ -76,6 +76,7 @@ class PdfHighlighter extends react_1.PureComponent {
                 const { ownerDocument: doc } = ref;
                 eventBus.on("textlayerrendered", this.onTextLayerRendered);
                 eventBus.on("pagesinit", this.onDocumentReady);
+                eventBus.on("updatetextlayermatches", this.calculateMatchProgress);
                 doc.addEventListener("selectionchange", this.onSelectionChange);
                 doc.addEventListener("keydown", this.handleKeyDown);
                 (_a = doc.defaultView) === null || _a === void 0 ? void 0 : _a.addEventListener("resize", this.debouncedScaleValue);
@@ -85,6 +86,7 @@ class PdfHighlighter extends react_1.PureComponent {
                     var _a;
                     eventBus.off("pagesinit", this.onDocumentReady);
                     eventBus.off("textlayerrendered", this.onTextLayerRendered);
+                    eventBus.off("updatetextlayermatches", this.calculateMatchProgress);
                     doc.removeEventListener("selectionchange", this.onSelectionChange);
                     doc.removeEventListener("keydown", this.handleKeyDown);
                     (_a = doc.defaultView) === null || _a === void 0 ? void 0 : _a.removeEventListener("resize", this.debouncedScaleValue);
@@ -92,6 +94,37 @@ class PdfHighlighter extends react_1.PureComponent {
                         observer.disconnect();
                 };
             }
+        };
+        this.calculateMatchProgress = () => {
+            let totalMatchCount = 0;
+            let currentMatchIndex = 0;
+            let hasCurrentMatchIndex = false;
+            this.viewer.findController.pageMatches.forEach((pageMatches, pageIndex) => {
+                if (!hasCurrentMatchIndex &&
+                    pageIndex === this.viewer.findController.selected.pageIdx) {
+                    currentMatchIndex =
+                        totalMatchCount + this.viewer.findController.selected.matchIdx;
+                    hasCurrentMatchIndex = true;
+                }
+                totalMatchCount += pageMatches.length;
+            });
+            const currentMatch = totalMatchCount === 0 ? 0 : currentMatchIndex + 1;
+            this.props.onSearch(currentMatch, totalMatchCount);
+        };
+        this.goToNextMatch = () => {
+            const { searchValue } = this.props;
+            this.viewer.findController.executeCommand("findagain", {
+                query: searchValue,
+                highlightAll: true,
+            });
+        };
+        this.goToPreviousMatch = () => {
+            const { searchValue } = this.props;
+            this.viewer.findController.executeCommand("findagain", {
+                query: searchValue,
+                highlightAll: true,
+                findPrevious: true,
+            });
         };
         this.hideTipAndSelection = () => {
             this.setState({
@@ -155,9 +188,10 @@ class PdfHighlighter extends react_1.PureComponent {
             }, 100);
         };
         this.onDocumentReady = () => {
-            const { scrollRef } = this.props;
+            const { scrollRef, findRefs } = this.props;
             this.handleScaleValue();
             scrollRef(this.scrollTo);
+            findRefs(this.goToPreviousMatch, this.goToNextMatch);
         };
         this.onSelectionChange = () => {
             const container = this.containerNode;
@@ -247,6 +281,13 @@ class PdfHighlighter extends react_1.PureComponent {
         this.init();
     }
     componentDidUpdate(prevProps) {
+        if (prevProps.searchValue != this.props.searchValue) {
+            this.viewer.findController.executeCommand("find", {
+                query: this.props.searchValue,
+                highlightAll: true,
+                phraseSearch: true,
+            });
+        }
         if (prevProps.forceAreaHighlight !== this.props.forceAreaHighlight) {
             this.setState(Object.assign(Object.assign({}, this.state), { forceAreaHighlight: this.props.forceAreaHighlight || false }));
         }
@@ -256,6 +297,13 @@ class PdfHighlighter extends react_1.PureComponent {
         }
         if (prevProps.highlights !== this.props.highlights) {
             this.renderHighlightLayers();
+        }
+        if (prevProps.searchValue != this.props.searchValue) {
+            this.viewer.findController.executeCommand("find", {
+                query: this.props.searchValue,
+                highlightAll: true,
+                phraseSearch: true,
+            });
         }
     }
     init() {
@@ -272,6 +320,11 @@ class PdfHighlighter extends react_1.PureComponent {
                     removePageBorders: true,
                     linkService: this.linkService,
                     l10n: pdf_viewer_1.NullL10n,
+                    findController: new pdf_viewer_1.PDFFindController({
+                        eventBus: this.eventBus,
+                        linkService: this.linkService,
+                    }),
+                    renderer: "canvas",
                 });
         this.linkService.setDocument(pdfDocument);
         this.linkService.setViewer(this.viewer);
@@ -430,5 +483,7 @@ class PdfHighlighter extends react_1.PureComponent {
 exports.PdfHighlighter = PdfHighlighter;
 PdfHighlighter.defaultProps = {
     pdfScaleValue: "auto",
+    searchValue: "",
+    onSearch: () => { },
 };
 //# sourceMappingURL=PdfHighlighter.js.map

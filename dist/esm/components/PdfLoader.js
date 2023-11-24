@@ -72,7 +72,7 @@ export class PdfLoader extends Component {
     }
 }
 PdfLoader.defaultProps = {
-    workerSrc: "https://unpkg.com/pdfjs-dist@2.16.105/build/pdf.worker.min.js",
+    workerSrc: "https://unpkg.com/pdfjs-dist@2.11.338/build/pdf.worker.min.js",
 };
 export default PdfLoader;
 //# sourceMappingURL=PdfLoader.js.map

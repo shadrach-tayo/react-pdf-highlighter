@@ -1,7 +1,7 @@
 import "pdfjs-dist/web/pdf_viewer.css";
 import "../style/pdf_viewer.css";
 import "../style/PdfHighlighter.css";
-import { EventBus, NullL10n, PDFLinkService, PDFViewer, } from "pdfjs-dist/legacy/web/pdf_viewer";
+import { EventBus, NullL10n, PDFLinkService, PDFViewer, PDFFindController, } from "pdfjs-dist/legacy/web/pdf_viewer";
 import React, { PureComponent } from "react";
 import { asElement, findOrCreateContainerLayer, getPageFromElement, getPagesFromRange, getWindow, isHTMLElement, } from "../lib/pdfjs-dom";
 import { scaledToViewport, viewportToScaled } from "../lib/coordinates";
@@ -47,6 +47,7 @@ export class PdfHighlighter extends PureComponent {
                 const { ownerDocument: doc } = ref;
                 eventBus.on("textlayerrendered", this.onTextLayerRendered);
                 eventBus.on("pagesinit", this.onDocumentReady);
+                eventBus.on("updatetextlayermatches", this.calculateMatchProgress);
                 doc.addEventListener("selectionchange", this.onSelectionChange);
                 doc.addEventListener("keydown", this.handleKeyDown);
                 (_a = doc.defaultView) === null || _a === void 0 ? void 0 : _a.addEventListener("resize", this.debouncedScaleValue);
@@ -56,6 +57,7 @@ export class PdfHighlighter extends PureComponent {
                     var _a;
                     eventBus.off("pagesinit", this.onDocumentReady);
                     eventBus.off("textlayerrendered", this.onTextLayerRendered);
+                    eventBus.off("updatetextlayermatches", this.calculateMatchProgress);
                     doc.removeEventListener("selectionchange", this.onSelectionChange);
                     doc.removeEventListener("keydown", this.handleKeyDown);
                     (_a = doc.defaultView) === null || _a === void 0 ? void 0 : _a.removeEventListener("resize", this.debouncedScaleValue);
@@ -63,6 +65,37 @@ export class PdfHighlighter extends PureComponent {
                         observer.disconnect();
                 };
             }
+        };
+        this.calculateMatchProgress = () => {
+            let totalMatchCount = 0;
+            let currentMatchIndex = 0;
+            let hasCurrentMatchIndex = false;
+            this.viewer.findController.pageMatches.forEach((pageMatches, pageIndex) => {
+                if (!hasCurrentMatchIndex &&
+                    pageIndex === this.viewer.findController.selected.pageIdx) {
+                    currentMatchIndex =
+                        totalMatchCount + this.viewer.findController.selected.matchIdx;
+                    hasCurrentMatchIndex = true;
+                }
+                totalMatchCount += pageMatches.length;
+            });
+            const currentMatch = totalMatchCount === 0 ? 0 : currentMatchIndex + 1;
+            this.props.onSearch(currentMatch, totalMatchCount);
+        };
+        this.goToNextMatch = () => {
+            const { searchValue } = this.props;
+            this.viewer.findController.executeCommand("findagain", {
+                query: searchValue,
+                highlightAll: true,
+            });
+        };
+        this.goToPreviousMatch = () => {
+            const { searchValue } = this.props;
+            this.viewer.findController.executeCommand("findagain", {
+                query: searchValue,
+                highlightAll: true,
+                findPrevious: true,
+            });
         };
         this.hideTipAndSelection = () => {
             this.setState({
@@ -126,9 +159,10 @@ export class PdfHighlighter extends PureComponent {
             }, 100);
         };
         this.onDocumentReady = () => {
-            const { scrollRef } = this.props;
+            const { scrollRef, findRefs } = this.props;
             this.handleScaleValue();
             scrollRef(this.scrollTo);
+            findRefs(this.goToPreviousMatch, this.goToNextMatch);
         };
         this.onSelectionChange = () => {
             const container = this.containerNode;
@@ -218,6 +252,13 @@ export class PdfHighlighter extends PureComponent {
         this.init();
     }
     componentDidUpdate(prevProps) {
+        if (prevProps.searchValue != this.props.searchValue) {
+            this.viewer.findController.executeCommand("find", {
+                query: this.props.searchValue,
+                highlightAll: true,
+                phraseSearch: true,
+            });
+        }
         if (prevProps.forceAreaHighlight !== this.props.forceAreaHighlight) {
             this.setState(Object.assign(Object.assign({}, this.state), { forceAreaHighlight: this.props.forceAreaHighlight || false }));
         }
@@ -227,6 +268,13 @@ export class PdfHighlighter extends PureComponent {
         }
         if (prevProps.highlights !== this.props.highlights) {
             this.renderHighlightLayers();
+        }
+        if (prevProps.searchValue != this.props.searchValue) {
+            this.viewer.findController.executeCommand("find", {
+                query: this.props.searchValue,
+                highlightAll: true,
+                phraseSearch: true,
+            });
         }
     }
     init() {
@@ -243,6 +291,11 @@ export class PdfHighlighter extends PureComponent {
                     removePageBorders: true,
                     linkService: this.linkService,
                     l10n: NullL10n,
+                    findController: new PDFFindController({
+                        eventBus: this.eventBus,
+                        linkService: this.linkService,
+                    }),
+                    renderer: "canvas",
                 });
         this.linkService.setDocument(pdfDocument);
         this.linkService.setViewer(this.viewer);
@@ -400,5 +453,7 @@ export class PdfHighlighter extends PureComponent {
 }
 PdfHighlighter.defaultProps = {
     pdfScaleValue: "auto",
+    searchValue: "",
+    onSearch: () => { },
 };
 //# sourceMappingURL=PdfHighlighter.js.map

@@ -34,8 +34,11 @@ interface Props<T_HT> {
     highlights: Array<T_HT>;
     onScrollChange: () => void;
     scrollRef: (scrollTo: (highlight: T_HT) => void) => void;
+    findRefs: (findPrev: () => void, findNext: () => void) => void;
     pdfDocument: PDFDocumentProxy;
     pdfScaleValue: string;
+    searchValue: string;
+    onSearch: (currentMatch: number, totalMatchCount: number) => void;
     onSelectionFinished: (position: ScaledPosition, content: {
         text?: string;
         image?: string;
@@ -46,6 +49,8 @@ interface Props<T_HT> {
 export declare class PdfHighlighter<T_HT extends IHighlight> extends PureComponent<Props<T_HT>, State<T_HT>> {
     static defaultProps: {
         pdfScaleValue: string;
+        searchValue: string;
+        onSearch: () => void;
     };
     state: State<T_HT>;
     eventBus: EventBus;
@@ -66,6 +71,9 @@ export declare class PdfHighlighter<T_HT extends IHighlight> extends PureCompone
     attachRef: () => void;
     componentDidUpdate(prevProps: Props<T_HT>): void;
     init(): void;
+    calculateMatchProgress: () => void;
+    goToNextMatch: () => void;
+    goToPreviousMatch: () => void;
     componentWillUnmount(): void;
     findOrCreateHighlightLayer(page: number): Element | null;
     groupHighlightsByPage(highlights: Array<T_HT>): {

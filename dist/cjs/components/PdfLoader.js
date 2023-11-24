@@ -99,7 +99,7 @@ class PdfLoader extends react_1.Component {
 }
 exports.PdfLoader = PdfLoader;
 PdfLoader.defaultProps = {
-    workerSrc: "https://unpkg.com/pdfjs-dist@2.16.105/build/pdf.worker.min.js",
+    workerSrc: "https://unpkg.com/pdfjs-dist@2.11.338/build/pdf.worker.min.js",
 };
 exports.default = PdfLoader;
 //# sourceMappingURL=PdfLoader.js.map

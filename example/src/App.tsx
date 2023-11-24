@@ -102,16 +102,12 @@ class App extends Component<{}, State> {
   addHighlight(highlight: NewHighlight) {
     const { highlights } = this.state;
 
-    console.log("Saving highlight", highlight);
-
     this.setState({
       highlights: [{ ...highlight, id: getNextId() }, ...highlights],
     });
   }
 
   updateHighlight(highlightId: string, position: Object, content: Object) {
-    console.log("Updating highlight", highlightId, position, content);
-
     this.setState({
       highlights: this.state.highlights.map((h) => {
         const {
@@ -152,6 +148,8 @@ class App extends Component<{}, State> {
           <PdfLoader url={url} beforeLoad={<Spinner />}>
             {(pdfDocument) => (
               <PdfHighlighter
+                searchValue=""
+                findRefs={() => {}}
                 pdfDocument={pdfDocument}
                 enableAreaSelection={(event) => event.altKey}
                 onScrollChange={resetHash}
